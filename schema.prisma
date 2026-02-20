@@ -1,0 +1,96 @@
+// prisma/schema.prisma
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Host {
+  id           String    @id @default(uuid())
+  email        String    @unique
+  passwordHash String
+  name         String
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  questions    Question[]
+  sessions     Session[]
+  otpTokens    OtpToken[]
+}
+
+model OtpToken {
+  id        String   @id @default(uuid())
+  hostId    String
+  host      Host     @relation(fields: [hostId], references: [id])
+  token     String   @unique
+  expiresAt DateTime
+  used      Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
+
+model Question {
+  id          String   @id @default(uuid())
+  hostId      String
+  host        Host     @relation(fields: [hostId], references: [id])
+  questionAr  String
+  questionEn  String
+  answerAr    String
+  answerEn    String
+  category    String
+  difficulty  String   @default("medium")
+  firstLetter String?
+  tags        String?  // JSON array as string
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  usedInGames UsedQuestion[]
+}
+
+model Session {
+  id          String   @id @default(uuid())
+  roomCode    String   @unique
+  hostId      String
+  host        Host     @relation(fields: [hostId], references: [id])
+  boardSize   String   @default("medium")
+  language    String   @default("AR")
+  categories  String?  // JSON
+  difficulty  String   @default("all")
+  timerSeconds Int     @default(30)
+  buzzMode    Boolean  @default(true)
+  status      String   @default("lobby")  // lobby | playing | finished
+  boardState  String?  // JSON: cell ownership
+  teams       String?  // JSON: team members
+  winnner     String?
+  createdAt   DateTime @default(now())
+  endedAt     DateTime?
+  usedQuestions UsedQuestion[]
+  history     QuestionHistory[]
+}
+
+model UsedQuestion {
+  id         String   @id @default(uuid())
+  sessionId  String
+  session    Session  @relation(fields: [sessionId], references: [id])
+  questionId String
+  question   Question @relation(fields: [questionId], references: [id])
+  askedAt    DateTime @default(now())
+  teamAnswered String?
+  correct    Boolean?
+  cellIndex  Int?
+}
+
+model QuestionHistory {
+  id         String   @id @default(uuid())
+  sessionId  String
+  session    Session  @relation(fields: [sessionId], references: [id])
+  questionId String
+  questionEn String
+  questionAr String
+  answerEn   String
+  answerAr   String
+  askedAt    DateTime @default(now())
+  teamAnswered String?
+  correct    Boolean?
+  cellIndex  Int?
+}
